@@ -1,25 +1,17 @@
-# react-native-qr-scanner
+# react-native-qr-decode-image-camera
 
 ```bash
-yarn add git+https://github.com/ihor-linovitsky/react-native-qr-scanner.git
+yarn add react-native-qr-decode-image-camera
 or
-npm install git+https://github.com/ihor-linovitsky/react-native-qr-scanner.git
-
-or add next line to package.json
-"dependencies": {
-  "react-native-qr-scanner": "git+https://github.com/ihor-linovitsky/react-native-qr-scanner.git",
-  ...
-}
+npm install react-native-qr-decode-image-camera
 run
 npm install
 ```
 
+## Install react native camera and give necessary permission
+
 ```bash
 then run
-
-react-native link react-native-qr-scanner
-
-also do
 
 cd ios
 pod install
@@ -32,35 +24,6 @@ or
 react-native run-ios
 
 ```
-
-```bash
-react-native link react-native-camera && react-native-qr-scanner
-```
-
-- ios `ios/projectName/Info.plist`:
-
-```xml
-<key>NSCameraUsageDescription</key>
-<string/>
-<key>NSPhotoLibraryUsageDescription</key>
-<string/>
-<key>NSMicrophoneUsageDescription</key>
-<string/>
-<key>NSPhotoLibraryAddUsageDescription</key>
-<string/>
-```
-
-- android `android/app/src/main/AndroidManifest.xml`:
-
-```xml
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.RECORD_AUDIO"/>
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.VIBRATE"/>
-```
-
-<https://github.com/react-native-community/react-native-camera/blob/master/docs/GradleUpgradeGuide.md>
 
 # Example
 
