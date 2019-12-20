@@ -13,8 +13,8 @@ import {
   StatusBar
 } from 'react-native';
 /**
- * 扫描界面遮罩
- * 单独写一个类，方便拷贝使用
+ * Scanning Interface Mask
+ * Write a separate class for easy copying
  */
 export default class QRScannerView extends Component {
   static defaultProps = {
@@ -34,7 +34,7 @@ export default class QRScannerView extends Component {
     scanBarImage: null,
     scanBarHeight: 1.5,
     scanBarMargin: 6,
-    hintText: '将二维码/条码放入框内，即可自动扫描',
+    hintText: 'Put the QR code / bar code into the box and it will scan automatically',
     hintTextStyle: {
       color: '#fff',
       fontSize: 14,
@@ -55,17 +55,18 @@ export default class QRScannerView extends Component {
     this.isClosed = false;
   }
 
-  //获取背景颜色
+  //Get background color
   getBackgroundColor = () => {
     return ({backgroundColor: this.props.maskColor});
   }
 
-  //获取扫描框背景大小
+  //Get scan box background size
   getRectSize = () => {
     return ({height: this.props.rectHeight, width: this.props.rectWidth});
   }
 
-  //获取扫描框边框大小
+  //Get scan frame border size
+
   getBorderSize = () => {
     if (this.props.isCornerOffset) {
       return ({
@@ -77,33 +78,33 @@ export default class QRScannerView extends Component {
     }
   }
 
-  //获取扫描框转角的颜色
+  //Get the color of the corner of the scan frame
   getCornerColor = () => {
     return ({borderColor: this.props.cornerColor});
   }
 
-  //获取扫描框转角的大小
+  //Get the size of the corner of the scan frame
   getCornerSize = () => {
     return ({height: this.props.cornerBorderLength, width: this.props.cornerBorderLength});
   }
 
-  //获取扫描框大小
+  //Get scan frame size
   getBorderWidth = () => {
     return ({borderWidth: this.props.borderWidth});
   }
 
-  //获取扫描框颜色
+  //Get scan box color
   getBorderColor = () => {
     return ({borderColor: this.props.borderColor});
   }
 
-  //测量整个扫描组件的大小
+  //Measure the size of the entire scanning component
   measureTotalSize = (e) => {
     let totalSize = e.layout;
     this.setState({topWidth: totalSize.width})
   }
 
-  //测量扫描框的位置
+  //Measure the position of the scan frame
   measureRectPosition = (e) => {
     let rectSize = e.layout;
     rectSize.x += this.props.finderX
@@ -112,7 +113,7 @@ export default class QRScannerView extends Component {
     this.setState({topHeight: rectSize.y, leftWidth: rectSize.x})
   }
 
-  //获取顶部遮罩高度
+  //Get top mask height
   getTopMaskHeight = () => {
     if (this.props.isCornerOffset) {
       return this.state.topHeight + this.props.rectHeight - this.props.cornerOffsetSize;
@@ -121,7 +122,7 @@ export default class QRScannerView extends Component {
     }
   }
 
-  //获取底部遮罩高度
+  //Get bottom mask height
   getBottomMaskHeight = () => {
     if (this.props.isCornerOffset) {
       return this.props.rectHeight + this.state.topHeight - this.props.cornerOffsetSize;
@@ -130,7 +131,7 @@ export default class QRScannerView extends Component {
     }
   }
 
-  //获取左右两边遮罩高度
+  //Get the left and right mask height
   getSideMaskHeight = () => {
     if (this.props.isCornerOffset) {
       return this.props.rectHeight - this.props.cornerOffsetSize * 2;
@@ -139,7 +140,7 @@ export default class QRScannerView extends Component {
     }
   }
 
-  //获取左右两边遮罩宽度
+  //Get left and right mask width
   getSideMaskWidth = () => {
     if (this.props.isCornerOffset) {
       return this.state.leftWidth + this.props.cornerOffsetSize;
@@ -160,7 +161,7 @@ export default class QRScannerView extends Component {
     return this.props.rectWidth - this.props.scanBarMargin * 2
   }
 
-  //绘制扫描线
+  //Draw scan lines
   _renderScanBar = () => {
     if (!this.props.isShowScanBar) 
       return;

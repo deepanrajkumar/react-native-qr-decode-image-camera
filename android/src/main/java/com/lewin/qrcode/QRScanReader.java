@@ -41,12 +41,12 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     public void readerQR(String fileUrl, Promise promise ) {
         Result result = scanningImage(fileUrl);
         if(result == null){
-            promise.reject("404","没有相关的二维码");
+            promise.reject("404","No related QR code");
 //            result = decodeBarcodeRGB(fileUrl);
 //            if(result == null){
 //                result = decodeBarcodeYUV(fileUrl);
 //                if(result == null){
-//                    promise.reject("404","没有相关的二维码");
+//                    promise.reject("404","No related QR code");
 //                }else{
 //                    promise.resolve(result.getText());
 //                }
@@ -60,7 +60,7 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     }
 
     /**
-     * 扫描二维码图片的方法
+     * Method for scanning QR code pictures
      * @param path
      * @return
      */
@@ -69,12 +69,12 @@ public class QRScanReader extends ReactContextBaseJavaModule {
             return null;
         }
         Hashtable<DecodeHintType, String> hints = new Hashtable<>();
-        hints.put(DecodeHintType.CHARACTER_SET, "UTF8"); //设置二维码内容的编码
+        hints.put(DecodeHintType.CHARACTER_SET, "UTF8"); //Set the encoding of QR code content
 
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true; // 先获取原大小
+        options.inJustDecodeBounds = true; // Get the original size first
         Bitmap scanBitmap = BitmapFactory.decodeFile(path, options);
-        options.inJustDecodeBounds = false; // 获取新的大小
+        options.inJustDecodeBounds = false; // Get new size
         int sampleSize = (int) (options.outHeight / (float) 200);
         if (sampleSize <= 0)
             sampleSize = 1;
@@ -83,7 +83,7 @@ public class QRScanReader extends ReactContextBaseJavaModule {
         int width=scanBitmap.getWidth();
         int height=scanBitmap.getHeight();
         int[] pixels=new int[width*height];
-        scanBitmap.getPixels(pixels,0,width,0,0,width,height);//获取图片像素点
+        scanBitmap.getPixels(pixels,0,width,0,0,width,height);//Get picture pixels
         RGBLuminanceSource source = new RGBLuminanceSource(scanBitmap.getWidth(),scanBitmap.getHeight(),pixels);
         BinaryBitmap bitmap1 = new BinaryBitmap(new HybridBinarizer(source));
         QRCodeReader reader = new QRCodeReader();
@@ -100,7 +100,7 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     }
 
     /**
-     * 解析二维码（使用解析RGB编码数据的方式）
+     * Parse QR code (using the method of parsing RGB coded data)
      *
      * @param path
      * @return
@@ -117,7 +117,7 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     }
 
     /**
-     * 解析二维码 （使用解析RGB编码数据的方式）
+     * Parse QR code (using the method of parsing RGB coded data)
      *
      * @param barcode
      * @return
@@ -146,7 +146,7 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     }
 
     /**
-     * 解析二维码（使用解析YUV编码数据的方式）
+     * Parse QR code (using the method of parsing YUV coded data)
      *
      * @param path
      * @return
@@ -165,7 +165,7 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     }
 
     /**
-     * 解析二维码（使用解析YUV编码数据的方式）
+     * Parse QR code (using the method of parsing YUV coded data)
      *
      * @param barcode
      * @return
@@ -176,13 +176,13 @@ public class QRScanReader extends ReactContextBaseJavaModule {
         }
         int width = barcode.getWidth();
         int height = barcode.getHeight();
-        //以argb方式存放图片的像素
+        //Store the pixels of the picture in argb mode
         int[] argb = new int[width * height];
         barcode.getPixels(argb, 0, width, 0, 0, width, height);
-        //将argb转换为yuv
+        //Convert argb to yuv
         byte[] yuv = new byte[width * height * 3 / 2];
         encodeYUV420SP(yuv, argb, width, height);
-        //解析YUV编码方式的二维码
+        //Analyze the QR code of the YUV encoding method
         Result result = decodeBarcodeYUV(yuv, width, height);
 
         barcode.recycle();
@@ -191,7 +191,7 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     }
 
     /**
-     * 解析二维码（使用解析YUV编码数据的方式）
+     * Parse QR code (using the method of parsing YUV coded data)
      *
      * @param yuv
      * @param width
@@ -223,7 +223,7 @@ public class QRScanReader extends ReactContextBaseJavaModule {
 
 
     /**
-     * RGB转YUV的公式是:
+     * The formula for RGB to YUV is:
      * Y=0.299R+0.587G+0.114B;
      * U=-0.147R-0.289G+0.436B;
      * V=0.615R-0.515G-0.1B;
@@ -234,18 +234,18 @@ public class QRScanReader extends ReactContextBaseJavaModule {
      * @param height
      */
     private static void encodeYUV420SP(byte[] yuv, int[] argb, int width, int height) {
-        // 帧图片的像素大小
+        // Pixel size of frame picture
         final int frameSize = width * height;
-        // ---YUV数据---
+        // ---YUV data---
         int Y, U, V;
-        // Y的index从0开始
+        // Y index starts at 0
         int yIndex = 0;
         // UV的index从frameSize开始
         int uvIndex = frameSize;
-        // ---颜色数据---
+        // ---Color data---
         int R, G, B;
         int rgbIndex = 0;
-        // ---循环所有像素点，RGB转YUV---
+        // ---Cycle all pixels, RGB to YUV---
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width; i++) {
                 R = (argb[rgbIndex] & 0xff0000) >> 16;

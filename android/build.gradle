@@ -10,6 +10,10 @@ def computeVersionName() {
 buildscript {
     repositories {
         jcenter()
+        maven {
+            url 'https://maven.google.com/'
+            name 'Google'
+        }
     }
 
     dependencies {
@@ -41,6 +45,10 @@ repositories {
     }
     maven {
         url "$projectDir/../../react-native/android"
+    }
+    maven {
+        url 'https://maven.google.com/'
+        name 'Google'
     }
 }
 
