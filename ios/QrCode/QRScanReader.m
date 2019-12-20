@@ -11,8 +11,8 @@ RCT_EXPORT_METHOD(readerQR:(NSString *)fileUrl success:(RCTPromiseResolveBlock)s
     if(result){
       success(result);
     }else{
-      NSString *domain = @"";
-      NSString *desc = NSLocalizedString(@"No related QR code", @"");
+      NSString *domain = @"yitang.xiao";
+      NSString *desc = NSLocalizedString(@"没有相关二维码", @"");
       NSDictionary *userInfo = @{ NSLocalizedDescriptionKey : desc };
       NSError *error = [NSError errorWithDomain:domain
                                            code:404
@@ -30,7 +30,7 @@ RCT_EXPORT_METHOD(readerQR:(NSString *)fileUrl success:(RCTPromiseResolveBlock)s
   
   CIContext *context = [CIContext contextWithOptions:nil];
   
-  // CIDetector(CIDetector(Can be used for face recognition) for image analysis，Declare a CIDetector，And set the recognition type CIDetectorTypeQRCode
+  // CIDetector(CIDetector可用于人脸识别)进行图片解析，声明一个CIDetector，并设定识别类型 CIDetectorTypeQRCode
   CIDetector *detector = [CIDetector detectorOfType:CIDetectorTypeQRCode context:context options:@{CIDetectorAccuracy:CIDetectorAccuracyHigh}];
   NSData *fileData = [[NSData alloc] initWithContentsOfFile:fileUrl];
   CIImage *ciImage = [CIImage imageWithData:fileData];
@@ -38,7 +38,7 @@ RCT_EXPORT_METHOD(readerQR:(NSString *)fileUrl success:(RCTPromiseResolveBlock)s
   if(!features || features.count==0){
     return nil;
   }
-  //3. Get scan results
+  //3. 获取扫描结果
   CIQRCodeFeature *feature = [features objectAtIndex:0];
   NSString *scannedResult = feature.messageString;
   return scannedResult;
