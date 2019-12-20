@@ -36,7 +36,7 @@ import {
   View,
   TouchableOpacity
 } from "react-native";
-import { QRscanner } from "react-native-qr-scanner";
+import { QRscanner } from "react-native-qr-decode-image-camera";
 
 export default class Scanner extends Component {
   constructor(props) {
@@ -96,7 +96,7 @@ import {
   View,
   TouchableOpacity
 } from "react-native";
-import { QRreader } from "react-native-qr-scanner";
+import { QRreader } from "react-native-qr-decode-image-camera";
 import ImagePicker from "react-native-image-picker";
 
 export default class Scanner extends Component {
