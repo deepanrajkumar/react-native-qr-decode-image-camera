@@ -321,7 +321,8 @@ export default class QRScannerView extends Component {
       this.state.animatedValue,
       {toValue: this.props.rectHeight,
       duration: this.props.scanBarAnimateTime,
-      easing: Easing.linear
+      easing: Easing.linear,
+      useNativeDriver: true
     }).start(() => this.scannerLineMove());
   }
 }
