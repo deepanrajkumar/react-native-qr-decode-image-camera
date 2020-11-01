@@ -5,7 +5,6 @@
   "license": "MIT",
   "main": "index.js",
   "nativePackage": true,
-  "publishConfig": { "registry": "https://npm.pkg.github.com/" },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -18,10 +17,10 @@
   "dependencies": {
     "prop-types": "15.5.10"
   },
-  "homepage": "https://github.com/deepanrajkumar01/react-native-qr-decode-image-camera#readme",
+  "homepage": "https://github.com/deepanrajkumar/react-native-qr-decode-image-camera#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/deepanrajkumar01/react-native-qr-decode-image-camera.git"
+    "url": "https://github.com/deepanrajkumar/react-native-qr-decode-image-camera.git"
   },
   "devDependencies": {
     "react": ">=15.0.0",
