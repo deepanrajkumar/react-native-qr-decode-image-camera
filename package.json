@@ -15,7 +15,7 @@
     "react-native"
   ],
   "dependencies": {
-    "prop-types": "15.5.10"
+    "prop-types": "^15.7.2"
   },
   "homepage": "https://github.com/deepanrajkumar/react-native-qr-decode-image-camera#readme",
   "repository": {
