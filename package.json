@@ -1,10 +1,11 @@
 {
   "name": "react-native-qr-decode-image-camera",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Decode react native from gallery and camera",
   "license": "MIT",
   "main": "index.js",
   "nativePackage": true,
+  "publishConfig": { "registry": "https://npm.pkg.github.com/" }
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
