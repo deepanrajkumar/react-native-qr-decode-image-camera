@@ -41,18 +41,22 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     public void readerQR(String fileUrl, Promise promise ) {
         Result result = scanningImage(fileUrl);
         if(result == null){
-            promise.reject("404","No related QR code");
-//            result = decodeBarcodeRGB(fileUrl);
-//            if(result == null){
-//                result = decodeBarcodeYUV(fileUrl);
-//                if(result == null){
-//                    promise.reject("404","No related QR code");
-//                }else{
-//                    promise.resolve(result.getText());
-//                }
-//            }else{
-//                promise.resolve(result.getText());
-//            }
+            // promise.reject("404","No related QR code");
+            result = decodeBarcodeRGB(fileUrl);
+            if(result == null){
+                try {
+                    result = decodeBarcodeYUV(fileUrl);
+                } catch (Exception error) {
+                    result = null;
+                }
+                if(result == null){
+                    promise.reject("404","No related QR code");
+                }else{
+                    promise.resolve(result.getText());
+                }
+            }else{
+                promise.resolve(result.getText());
+            }
 
         }else{
             promise.resolve(result.getText());

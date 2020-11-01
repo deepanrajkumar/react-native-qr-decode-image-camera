@@ -22,8 +22,6 @@ const pixelRatio = PixelRatio.get();
 export default class QRScanner extends PureComponent {
   constructor(props) {
     super(props);
-    // YellowBox
-    console.disableYellowBox = true;
     this.state = {
       scanning: false,
       barCodeSize: {}
