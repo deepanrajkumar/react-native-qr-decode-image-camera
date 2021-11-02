@@ -57,4 +57,5 @@ repositories {
 dependencies {
     implementation 'com.facebook.react:react-native:+'
     implementation 'com.google.zxing:core:3.4.0'
+    implementation 'com.google.mlkit:barcode-scanning:16.2.0'
 }
