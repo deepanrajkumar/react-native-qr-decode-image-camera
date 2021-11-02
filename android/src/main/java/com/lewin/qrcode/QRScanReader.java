@@ -1,32 +1,33 @@
 package com.lewin.qrcode;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.ChecksumException;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.FormatException;
-import com.google.zxing.MultiFormatReader;
-import com.google.zxing.NotFoundException;
-import com.google.zxing.PlanarYUVLuminanceSource;
-import com.google.zxing.RGBLuminanceSource;
-import com.google.zxing.ReaderException;
-import com.google.zxing.Result;
-import com.google.zxing.common.HybridBinarizer;
-import com.google.zxing.qrcode.QRCodeReader;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.mlkit.vision.barcode.Barcode;
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.common.InputImage;
 
-import java.util.Hashtable;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
- * Created by lewin on 2018/3/14.
+ * Created by lewin on 2018/3/14,
+ * Updated by stefanmajiros on 2021/6/15
  */
 
-public class QRScanReader extends ReactContextBaseJavaModule {
+public class QRScanReader extends ReactContextBaseJavaModule  {
 
     public QRScanReader(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -38,245 +39,45 @@ public class QRScanReader extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void readerQR(String fileUrl, Promise promise ) {
-        Result result = scanningImage(fileUrl);
-        if(result == null){
-            // promise.reject("404","No related QR code");
-            result = decodeBarcodeRGB(fileUrl);
-            if(result == null){
-                try {
-                    result = decodeBarcodeYUV(fileUrl);
-                } catch (Exception error) {
-                    result = null;
-                }
-                if(result == null){
-                    promise.reject("404","No related QR code");
-                }else{
-                    promise.resolve(result.getText());
-                }
-            }else{
-                promise.resolve(result.getText());
-            }
-
-        }else{
-            promise.resolve(result.getText());
-        }
-    }
-
-    /**
-     * Method for scanning QR code pictures
-     * @param path
-     * @return
-     */
-    public Result scanningImage(String path) {
-        if (path == null || path.length() == 0) {
-            return null;
-        }
-        Hashtable<DecodeHintType, String> hints = new Hashtable<>();
-        hints.put(DecodeHintType.CHARACTER_SET, "UTF8"); //Set the encoding of QR code content
-
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true; // Get the original size first
-        Bitmap scanBitmap = BitmapFactory.decodeFile(path, options);
-        options.inJustDecodeBounds = false; // Get new size
-        int sampleSize = (int) (options.outHeight / (float) 200);
-        if (sampleSize <= 0)
-            sampleSize = 1;
-        options.inSampleSize = sampleSize;
-        scanBitmap = BitmapFactory.decodeFile(path, options);
-        int width=scanBitmap.getWidth();
-        int height=scanBitmap.getHeight();
-        int[] pixels=new int[width*height];
-        scanBitmap.getPixels(pixels,0,width,0,0,width,height);//Get picture pixels
-        RGBLuminanceSource source = new RGBLuminanceSource(scanBitmap.getWidth(),scanBitmap.getHeight(),pixels);
-        BinaryBitmap bitmap1 = new BinaryBitmap(new HybridBinarizer(source));
-        QRCodeReader reader = new QRCodeReader();
+    public void readerQR(String fileUrl, final Promise promise ) {
+        // ML Vision : https://developers.google.com/ml-kit/vision/barcode-scanning/android#java
         try {
-            return reader.decode(bitmap1, hints);
-        } catch (NotFoundException e) {
+            Uri uri = Uri.parse(fileUrl);
+            InputImage image = InputImage.fromFilePath(this.getReactApplicationContext(), uri);
+            BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
+                    .setBarcodeFormats(
+                            Barcode.FORMAT_AZTEC,
+                            Barcode.FORMAT_QR_CODE
+                    )
+                    .build();
+            final BarcodeScanner scanner = BarcodeScanning.getClient(options);
+            Task<List<Barcode>> result = scanner.process(image)
+                    .addOnSuccessListener(new OnSuccessListener<List<Barcode>>() {
+                        @Override
+                        public void onSuccess(List<Barcode> barcodes) {
+                            Log.d("OK", " " +  barcodes.toString());
+                            List<String> rawValues = new LinkedList<>();
+                            for (Barcode barcode: barcodes) {
+                                String rawValue = barcode.getRawValue();
+                                rawValues.add(rawValue);
+                            }
+                            scanner.close();
+                            promise.resolve(rawValues.get(0));
+
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.d("NOT_OK", "" +  e.getMessage());
+                            scanner.close();
+                            promise.reject("NOT_OK", e.getMessage());
+
+                        }
+                    });
+        } catch (IOException e) {
+            Log.e("ERROR", "" + e.getMessage());
             e.printStackTrace();
-        } catch (ChecksumException e) {
-            e.printStackTrace();
-        } catch (FormatException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    /**
-     * Parse QR code (using the method of parsing RGB coded data)
-     *
-     * @param path
-     * @return
-     */
-    public static Result decodeBarcodeRGB(String path) {
-
-        BitmapFactory.Options opts = new BitmapFactory.Options();
-        opts.inSampleSize = 1;
-        Bitmap barcode = BitmapFactory.decodeFile(path, opts);
-        Result result = decodeBarcodeRGB(barcode);
-        barcode.recycle();
-        barcode = null;
-        return result;
-    }
-
-    /**
-     * Parse QR code (using the method of parsing RGB coded data)
-     *
-     * @param barcode
-     * @return
-     */
-    public static Result decodeBarcodeRGB(Bitmap barcode) {
-        int width = barcode.getWidth();
-        int height = barcode.getHeight();
-        int[] data = new int[width * height];
-        barcode.getPixels(data, 0, width, 0, 0, width, height);
-        RGBLuminanceSource source = new RGBLuminanceSource(width, height, data);
-        BinaryBitmap bitmap1 = new BinaryBitmap(new HybridBinarizer(source));
-        QRCodeReader reader = new QRCodeReader();
-        Result result = null;
-        try {
-            result = reader.decode(bitmap1);
-        } catch (NotFoundException e) {
-            e.printStackTrace();
-        } catch (ChecksumException e) {
-            e.printStackTrace();
-        } catch (FormatException e) {
-            e.printStackTrace();
-        }
-        barcode.recycle();
-        barcode = null;
-        return result;
-    }
-
-    /**
-     * Parse QR code (using the method of parsing YUV coded data)
-     *
-     * @param path
-     * @return
-     */
-    public static Result decodeBarcodeYUV(String path) {
-        if (path == null || path.length() == 0) {
-            return null;
-        }
-        BitmapFactory.Options opts = new BitmapFactory.Options();
-        opts.inSampleSize = 1;
-        Bitmap barcode = BitmapFactory.decodeFile(path, opts);
-        Result result = decodeBarcodeYUV(barcode);
-        barcode.recycle();
-        barcode = null;
-        return result;
-    }
-
-    /**
-     * Parse QR code (using the method of parsing YUV coded data)
-     *
-     * @param barcode
-     * @return
-     */
-    public static Result decodeBarcodeYUV(Bitmap barcode) {
-        if (null == barcode) {
-            return null;
-        }
-        int width = barcode.getWidth();
-        int height = barcode.getHeight();
-        //Store the pixels of the picture in argb mode
-        int[] argb = new int[width * height];
-        barcode.getPixels(argb, 0, width, 0, 0, width, height);
-        //Convert argb to yuv
-        byte[] yuv = new byte[width * height * 3 / 2];
-        encodeYUV420SP(yuv, argb, width, height);
-        //Analyze the QR code of the YUV encoding method
-        Result result = decodeBarcodeYUV(yuv, width, height);
-
-        barcode.recycle();
-        barcode = null;
-        return result;
-    }
-
-    /**
-     * Parse QR code (using the method of parsing YUV coded data)
-     *
-     * @param yuv
-     * @param width
-     * @param height
-     * @return
-     */
-    private static Result decodeBarcodeYUV(byte[] yuv, int width, int height) {
-        long start = System.currentTimeMillis();
-        MultiFormatReader multiFormatReader = new MultiFormatReader();
-        multiFormatReader.setHints(null);
-
-        Result rawResult = null;
-        PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(yuv, width, height, 0, 0,
-                width, height, false);
-        if (source != null) {
-            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-            try {
-                rawResult = multiFormatReader.decodeWithState(bitmap);
-            } catch (ReaderException re) {
-                re.printStackTrace();
-            } finally {
-                multiFormatReader.reset();
-                multiFormatReader = null;
-            }
-        }
-        long end = System.currentTimeMillis();
-        return rawResult;
-    }
-
-
-    /**
-     * The formula for RGB to YUV is:
-     * Y=0.299R+0.587G+0.114B;
-     * U=-0.147R-0.289G+0.436B;
-     * V=0.615R-0.515G-0.1B;
-     *
-     * @param yuv
-     * @param argb
-     * @param width
-     * @param height
-     */
-    private static void encodeYUV420SP(byte[] yuv, int[] argb, int width, int height) {
-        // Pixel size of frame picture
-        final int frameSize = width * height;
-        // ---YUV data---
-        int Y, U, V;
-        // Y index starts at 0
-        int yIndex = 0;
-        // UV的index从frameSize开始
-        int uvIndex = frameSize;
-        // ---Color data---
-        int R, G, B;
-        int rgbIndex = 0;
-        // ---Cycle all pixels, RGB to YUV---
-        for (int j = 0; j < height; j++) {
-            for (int i = 0; i < width; i++) {
-                R = (argb[rgbIndex] & 0xff0000) >> 16;
-                G = (argb[rgbIndex] & 0xff00) >> 8;
-                B = (argb[rgbIndex] & 0xff);
-                //
-                rgbIndex++;
-                // well known RGB to YUV algorithm
-                Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
-                U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
-                V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
-                Y = Math.max(0, Math.min(Y, 255));
-                U = Math.max(0, Math.min(U, 255));
-                V = Math.max(0, Math.min(V, 255));
-                // NV21 has a plane of Y and interleaved planes of VU each sampled by a factor of 2
-                // meaning for every 4 Y pixels there are 1 V and 1 U. Note the sampling is every other
-                // pixel AND every other scan line.
-                // ---Y---
-                yuv[yIndex++] = (byte) Y;
-                // ---UV---
-                if ((j % 2 == 0) && (i % 2 == 0)) {
-                    //
-                    yuv[uvIndex++] = (byte) V;
-                    //
-                    yuv[uvIndex++] = (byte) U;
-                }
-            }
         }
     }
 }
