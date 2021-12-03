@@ -47,7 +47,8 @@ export default class QRScanner extends PureComponent {
       <View style={styles.authorizationContainer}>
         <Text style={styles.notAuthorizedText}>Camera not authorized</Text>
       </View>
-    )
+    ),
+    vibrate: true,
   };
 
   render() {
@@ -140,12 +141,16 @@ export default class QRScanner extends PureComponent {
       this.props.finderY;
     if (x > viewMinX && y > viewMinY && x < viewMaxX && y < viewMaxY) {
       if (this.props.isRepeatScan) {
-        Vibration.vibrate();
+        if (this.props.vibrate) {
+          Vibration.vibrate();
+        }
         this.props.onRead(e);
       } else {
         if (!this.isShowCode) {
           this.isShowCode = true;
-          Vibration.vibrate();
+          if (this.props.vibrate) {
+            Vibration.vibrate();
+          }
           this.props.onRead(e);
         }
       }
@@ -266,5 +271,6 @@ QRScanner.propTypes = {
   finderY: PropTypes.number,
   zoom: PropTypes.number,
   translucent: PropTypes.bool,
-  cameraType: PropTypes.string
+  cameraType: PropTypes.string,
+  vibrate: PropTypes.bool,
 };
