@@ -1,6 +1,6 @@
 {
   "name": "react-native-qr-decode-image-camera",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Decode react native from gallery and camera",
   "license": "MIT",
   "main": "index.js",
