@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "react": "^18.2.0",
-    "react-native": "^0.69.0"
+    "react-native": "^0.72.6"
   },
   "author": "deepanrajkumar"
 }
