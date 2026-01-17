@@ -1,219 +1,158 @@
-import React, { PureComponent } from "react";
-import { RNCamera } from "react-native-camera";
-import PropTypes from "prop-types";
-
+import React, { useCallback, useEffect, useRef } from "react";
+import { StyleSheet, Text, Vibration, View } from "react-native";
 import {
-  StyleSheet,
-  View,
-  Text,
-  Image,
-  Vibration,
-  Platform,
-  PixelRatio,
-  StatusBar
-} from "react-native";
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+  useCodeScanner
+} from "react-native-vision-camera";
 
 import QRScannerView from "./QRScannerView";
-const pixelRatio = PixelRatio.get();
 
-/**
- * Scan interface
- */
-export default class QRScanner extends PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      scanning: false,
-      barCodeSize: {}
-    };
-  }
+const defaultRender = () => null;
 
-  static defaultProps = {
-    onRead: () => {},
-    renderTopView: () => {},
-    renderBottomView: () => (
-      <View style={{ flex: 1, backgroundColor: "#0000004D" }} />
-    ),
-    rectHeight: 200,
-    rectWidth: 200,
-    flashMode: false, // Flashlight mode
-    finderX: 0, // Viewfinder X-axis offset
-    finderY: 0, // Viewfinder Y-axis offset
-    zoom: 0.2, // Zoom range 0 - 1
-    translucent: false,
-    isRepeatScan: false,
-    cameraType: "back",
-    notAuthorizedView: () => (
-      <View style={styles.authorizationContainer}>
-        <Text style={styles.notAuthorizedText}>Camera not authorized</Text>
-      </View>
-    ),
-    vibrate: true,
-  };
+const clamp01 = value => Math.max(0, Math.min(1, value));
 
-  render() {
-    return (
-      <View
-        style={{
-          flex: 1
-        }}
-      >
-        <RNCamera
-          style={{
-            flex: 1
-          }}
-          captureAudio={false}
-          onBarCodeRead={this._handleBarCodeRead}
-          androidCameraPermissionOptions={null}
-          androidRecordAudioPermissionOptions={null}
-          notAuthorizedView={this.props.notAuthorizedView()}
-          barCodeTypes={[RNCamera.Constants.BarCodeType.qr]}
-          flashMode={
-            !this.props.flashMode
-              ? RNCamera.Constants.FlashMode.off
-              : RNCamera.Constants.FlashMode.torch
-          }
-          zoom={this.props.zoom}
-          type={this.props.cameraType}
-        >
-          <View style={[styles.topButtonsContainer, this.props.topViewStyle]}>
-            {this.props.renderTopView()}
-          </View>
-          <QRScannerView
-            maskColor={this.props.maskColor}
-            cornerColor={this.props.cornerColor}
-            borderColor={this.props.borderColor}
-            rectHeight={this.props.rectHeight}
-            rectWidth={this.props.rectWidth}
-            borderWidth={this.props.borderWidth}
-            cornerBorderWidth={this.props.cornerBorderWidth}
-            cornerBorderLength={this.props.cornerBorderLength}
-            cornerOffsetSize={this.props.cornerOffsetSize}
-            isCornerOffset={this.props.isCornerOffset}
-            bottomHeight={this.props.bottomHeight}
-            scanBarAnimateTime={this.props.scanBarAnimateTime}
-            scanBarColor={this.props.scanBarColor}
-            scanBarHeight={this.props.scanBarHeight}
-            scanBarMargin={this.props.scanBarMargin}
-            hintText={this.props.hintText}
-            hintTextStyle={this.props.hintTextStyle}
-            scanBarImage={this.props.scanBarImage}
-            hintTextPosition={this.props.hintTextPosition}
-            isShowScanBar={this.props.isShowScanBar}
-            finderX={this.props.finderX}
-            finderY={this.props.finderY}
-            returnSize={this.barCodeSize}
-          />
-          <View
-            style={[styles.bottomButtonsContainer, this.props.bottomViewStyle]}
-          >
-            {this.props.renderBottomView()}
-          </View>
-        </RNCamera>
-      </View>
-    );
-  }
+const defaultNotAuthorizedView = (
+  <View style={styles.authorizationContainer}>
+    <Text style={styles.notAuthorizedText}>Camera permission not granted</Text>
+  </View>
+);
 
-  isShowCode = false;
+const defaultNoCameraView = (
+  <View style={styles.authorizationContainer}>
+    <Text style={styles.notAuthorizedText}>No camera device available</Text>
+  </View>
+);
 
-  barCodeSize = size => this.setState({ barCodeSize: size });
+export default function QRScanner(props) {
+  const {
+    onRead,
+    isRepeatScan = false,
+    scanCooldownMs = 1200,
+    cameraPosition = "back",
+    device: deviceProp,
+    isActive = true,
+    torch = false,
+    zoom = 0,
+    renderTopView = defaultRender,
+    renderBottomView = defaultRender,
+    topViewStyle,
+    bottomViewStyle,
+    style,
+    cameraStyle,
+    notAuthorizedView = defaultNotAuthorizedView,
+    noCameraView = defaultNoCameraView,
+    requestPermissionOnMount = true,
+    codeTypes = ["qr"],
+    enablePinchToZoom = true,
+    vibrate = true,
+    ...overlayProps
+  } = props;
 
-  returnMax = (a, b) => (a > b ? a : b);
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice(cameraPosition);
+  const resolvedDevice = deviceProp || device;
 
-  returnMin = (a, b) => (a < b ? a : b);
+  const didScanRef = useRef(false);
+  const lastScanAtRef = useRef(0);
 
-  iosBarCode = e => {
-    let x = Number(e.bounds.origin.x);
-    let y = Number(e.bounds.origin.y);
-    let width = e.bounds.size.width;
-    let height = e.bounds.size.height;
-    let viewMinX = this.state.barCodeSize.x - this.props.finderX;
-    let viewMinY = this.state.barCodeSize.y - this.props.finderY;
-    let viewMaxX =
-      this.state.barCodeSize.x +
-      this.state.barCodeSize.width -
-      width -
-      this.props.finderX;
-    let viewMaxY =
-      this.state.barCodeSize.y +
-      this.state.barCodeSize.height -
-      height -
-      this.props.finderY;
-    if (x > viewMinX && y > viewMinY && x < viewMaxX && y < viewMaxY) {
-      if (this.props.isRepeatScan) {
-        if (this.props.vibrate) {
-          Vibration.vibrate();
-        }
-        this.props.onRead(e);
-      } else {
-        if (!this.isShowCode) {
-          this.isShowCode = true;
-          if (this.props.vibrate) {
-            Vibration.vibrate();
-          }
-          this.props.onRead(e);
-        }
-      }
+  useEffect(() => {
+    if (requestPermissionOnMount) {
+      requestPermission();
     }
-  };
+  }, [requestPermissionOnMount, requestPermission]);
 
-  androidBarCode = e => {
-    // if (!e.bounds[0] || !e.bounds[1] || !e.bounds[2] || !e.bounds[3]) return null;
-    // const leftBottom = {x: e.bounds[0].x / pixelRatio, y: e.bounds[0].y / pixelRatio}
-    // const leftTop= {x: e.bounds[1].x / pixelRatio, y: e.bounds[1].y / pixelRatio}
-    // const rightTop = {x: e.bounds[2].x / pixelRatio, y: e.bounds[2].y / pixelRatio}
-    // const rightBottom = {x: e.bounds[3].x / pixelRatio, y: e.bounds[3].y / pixelRatio}
-    // let x = this.returnMin(leftTop.x, leftBottom.x);
-    // let y = this.returnMin(leftTop.y, rightTop.y);
-    // let width = this.returnMax(rightTop.x - leftTop.x, rightBottom.x - leftBottom.x)
-    // let height = this.returnMax(leftBottom.y - leftTop.y , rightBottom.y - rightTop.y)
-    // let viewMinX = this.state.barCodeSize.x - this.props.finderX * 4 / pixelRatio - (this.props.finderX > 0 ? this.props.finderX/10 : 0)
-    // let viewMinY = this.state.barCodeSize.y - this.props.finderY * 4 / pixelRatio - (this.props.translucent ? 0 : StatusBar.currentHeight)*2/pixelRatio - (this.props.finderY > 0 ? this.props.finderY/3 : this.props.finderY/10*(-1))
-    // let viewMaxX = this.state.barCodeSize.x + 20 + this.state.barCodeSize.width*2 / pixelRatio - width - this.props.finderX *4/pixelRatio - (this.props.finderX < 0 ? 0 : this.props.finderX/5)
-    // let viewMaxY = this.state.barCodeSize.y + this.state.barCodeSize.height*2 / pixelRatio - height - this.props.finderY *4/pixelRatio  - (this.props.translucent ? 0 : StatusBar.currentHeight)*2/pixelRatio - (this.props.finderY < 0 ? this.props.finderY/5 : 0 )
-    // if(x&&y) {
-    //   if ((x > viewMinX && y > viewMinY) && (x < viewMaxX && y < viewMaxY)) {
-    //     if (this.props.isRepeatScan) {
-    //       Vibration.vibrate();
-    //       this.props.onRead(e)
-    //     } else {
-    //       if (!this.isShowCode) {
-    //         this.isShowCode = true;
-    //         Vibration.vibrate();
-    //         this.props.onRead(e)
-    //       }
-    //     }
-    //   }
-    // }
+  const onCodeScanned = useCallback(
+    codes => {
+      if (!codes || codes.length === 0) {
+        return;
+      }
+      if (!isRepeatScan && didScanRef.current) {
+        return;
+      }
+      if (isRepeatScan) {
+        const now = Date.now();
+        if (now - lastScanAtRef.current < scanCooldownMs) {
+          return;
+        }
+        lastScanAtRef.current = now;
+      }
 
-    // The following are unrestricted scanning areas
-    if (this.props.isRepeatScan) {
-      Vibration.vibrate();
-      this.props.onRead(e);
-    } else {
-      if (!this.isShowCode) {
-        this.isShowCode = true;
+      const code = codes[0];
+      const value = code?.value ?? code?.rawValue ?? "";
+      if (!value) {
+        return;
+      }
+
+      if (!isRepeatScan) {
+        didScanRef.current = true;
+      }
+
+      if (vibrate) {
         Vibration.vibrate();
-        this.props.onRead(e);
       }
-    }
-  };
 
-  _handleBarCodeRead = e => {
-    switch (Platform.OS) {
-      case "ios":
-        this.iosBarCode(e);
-        break;
-      case "android":
-        this.androidBarCode(e);
-        break;
-      default:
-        break;
-    }
-  };
+      if (onRead) {
+        onRead({
+          data: value,
+          rawValue: value,
+          type: code?.type,
+          bounds: code?.frame,
+          native: code
+        });
+      }
+    },
+    [isRepeatScan, scanCooldownMs, onRead, vibrate]
+  );
+
+  const codeScanner = useCodeScanner({
+    codeTypes,
+    onCodeScanned
+  });
+
+  const resolvedTorch =
+    typeof torch === "boolean" ? (torch ? "on" : "off") : torch;
+  const normalizedZoom = clamp01(zoom);
+  const resolvedZoom = resolvedDevice
+    ? resolvedDevice.minZoom +
+      (resolvedDevice.maxZoom - resolvedDevice.minZoom) * normalizedZoom
+    : normalizedZoom;
+
+  if (!hasPermission) {
+    return notAuthorizedView;
+  }
+
+  if (!resolvedDevice) {
+    return noCameraView;
+  }
+
+  return (
+    <View style={[styles.container, style]}>
+      <Camera
+        style={[StyleSheet.absoluteFill, cameraStyle]}
+        device={resolvedDevice}
+        isActive={isActive}
+        codeScanner={codeScanner}
+        torch={resolvedTorch}
+        zoom={resolvedZoom}
+        enableZoomGesture={enablePinchToZoom}
+      />
+      <QRScannerView {...overlayProps} />
+      <View style={[styles.topButtonsContainer, topViewStyle]}>
+        {renderTopView()}
+      </View>
+      <View style={[styles.bottomButtonsContainer, bottomViewStyle]}>
+        {renderBottomView()}
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1
+  },
   topButtonsContainer: {
     position: "absolute",
     height: 100,
@@ -238,39 +177,3 @@ const styles = StyleSheet.create({
     fontSize: 16
   }
 });
-
-QRScanner.propTypes = {
-  isRepeatScan: PropTypes.bool,
-  onRead: PropTypes.func,
-  maskColor: PropTypes.string,
-  borderColor: PropTypes.string,
-  cornerColor: PropTypes.string,
-  borderWidth: PropTypes.number,
-  cornerBorderWidth: PropTypes.number,
-  cornerBorderLength: PropTypes.number,
-  rectHeight: PropTypes.number,
-  rectWidth: PropTypes.number,
-  isCornerOffset: PropTypes.bool, //Whether the corners are offset
-  cornerOffsetSize: PropTypes.number,
-  bottomHeight: PropTypes.number,
-  scanBarAnimateTime: PropTypes.number,
-  scanBarColor: PropTypes.string,
-  scanBarImage: PropTypes.any,
-  scanBarHeight: PropTypes.number,
-  scanBarMargin: PropTypes.number,
-  hintText: PropTypes.string,
-  hintTextStyle: PropTypes.object,
-  hintTextPosition: PropTypes.number,
-  renderTopView: PropTypes.func,
-  renderBottomView: PropTypes.func,
-  isShowScanBar: PropTypes.bool,
-  topViewStyle: PropTypes.object,
-  bottomViewStyle: PropTypes.object,
-  flashMode: PropTypes.bool,
-  finderX: PropTypes.number,
-  finderY: PropTypes.number,
-  zoom: PropTypes.number,
-  translucent: PropTypes.bool,
-  cameraType: PropTypes.string,
-  vibrate: PropTypes.bool,
-};

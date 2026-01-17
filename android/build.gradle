@@ -1,40 +1,39 @@
-
 import groovy.json.JsonSlurper
 
+def safeExtGet(prop, fallback) {
+    return rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
 def computeVersionName() {
-    // dynamically retrieve version from package.json
     def slurper = new JsonSlurper()
-    def json = slurper.parse(file('../package.json'), "utf-8")
+    def json = slurper.parse(file("../package.json"), "utf-8")
     return json.version
 }
+
 buildscript {
     repositories {
-        jcenter()
         google()
-        maven {
-            url 'https://maven.google.com/'
-            name 'Google'
-        }
+        mavenCentral()
     }
-
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.2.1'
+        classpath "com.android.tools.build:gradle:8.2.2"
     }
 }
 
-apply plugin: 'com.android.library'
+apply plugin: "com.android.library"
 
 android {
-    compileSdkVersion 31
-    buildToolsVersion "31.0.0"
+    namespace "com.lewin.qrcode"
+    compileSdkVersion safeExtGet("compileSdkVersion", 34)
 
     defaultConfig {
-        minSdkVersion 23
-        targetSdkVersion 31
+        minSdkVersion safeExtGet("minSdkVersion", 23)
+        targetSdkVersion safeExtGet("targetSdkVersion", 34)
         versionCode 1
         versionName computeVersionName()
     }
-    lintOptions {
+
+    lint {
         abortOnError false
     }
 }
@@ -42,20 +41,9 @@ android {
 repositories {
     mavenCentral()
     google()
-     maven {
-        url "$projectDir/../Example/node_modules/react-native/android"
-    }
-    maven {
-        url "$projectDir/../../react-native/android"
-    }
-    maven {
-        url 'https://maven.google.com/'
-        name 'Google'
-    }
 }
 
 dependencies {
-    implementation 'com.facebook.react:react-native:+'
-    implementation 'com.google.zxing:core:3.4.0'
-    implementation 'com.google.mlkit:barcode-scanning:16.2.0'
+    implementation "com.facebook.react:react-native:+"
+    implementation "com.google.mlkit:barcode-scanning:17.2.0"
 }

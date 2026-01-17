@@ -1,0 +1,61 @@
+import type { ReactNode } from "react";
+import type { StyleProp, TextStyle, ViewStyle, ImageSourcePropType } from "react-native";
+import type { CameraDevice, CodeType } from "react-native-vision-camera";
+
+export type QrScanResult = {
+  data: string;
+  rawValue: string;
+  type?: string;
+  bounds?: { x: number; y: number; width: number; height: number } | undefined;
+  native?: unknown;
+};
+
+export type QrScannerProps = {
+  onRead: (result: QrScanResult) => void;
+  isRepeatScan?: boolean;
+  scanCooldownMs?: number;
+  cameraPosition?: "back" | "front";
+  device?: CameraDevice;
+  isActive?: boolean;
+  torch?: boolean | "on" | "off";
+  zoom?: number;
+  codeTypes?: CodeType[];
+  requestPermissionOnMount?: boolean;
+  enablePinchToZoom?: boolean;
+  renderTopView?: () => ReactNode;
+  renderBottomView?: () => ReactNode;
+  topViewStyle?: StyleProp<ViewStyle>;
+  bottomViewStyle?: StyleProp<ViewStyle>;
+  notAuthorizedView?: ReactNode;
+  noCameraView?: ReactNode;
+  vibrate?: boolean;
+  style?: StyleProp<ViewStyle>;
+  cameraStyle?: StyleProp<ViewStyle>;
+  maskColor?: string;
+  cornerColor?: string;
+  borderColor?: string;
+  rectHeight?: number;
+  rectWidth?: number;
+  borderWidth?: number;
+  cornerBorderWidth?: number;
+  cornerBorderLength?: number;
+  cornerOffsetSize?: number;
+  isCornerOffset?: boolean;
+  bottomHeight?: number;
+  scanBarAnimateTime?: number;
+  scanBarColor?: string;
+  scanBarImage?: ImageSourcePropType;
+  scanBarHeight?: number;
+  scanBarMargin?: number;
+  hintText?: string;
+  hintTextStyle?: StyleProp<TextStyle>;
+  hintTextPosition?: number;
+  isShowScanBar?: boolean;
+  finderX?: number;
+  finderY?: number;
+};
+
+export const QrScanner: (props: QrScannerProps) => JSX.Element;
+export const QRscanner: (props: QrScannerProps) => JSX.Element;
+export const decodeImage: (fileUri: string) => Promise<string>;
+export const QRreader: (fileUri: string) => Promise<string>;

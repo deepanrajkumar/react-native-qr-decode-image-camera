@@ -1,14 +1,18 @@
+require "json"
+
+package = JSON.parse(File.read(File.join(__dir__, "package.json")))
+
 Pod::Spec.new do |s|
-  s.name        = "QrCode"
-  s.version     = "1.0.0"
-  s.summary     = "some interesting summary."
-  s.description = "some interesting summary. 123123"
-  s.license     = { :type => "MIT", :file => "LICENSE" }
-  s.homepage    = "https://github.com/deepanrajkumar/react-native-qr-decode-image-camera#readme"
-  s.source      = { :git => "https://github.com/deepanrajkumar/react-native-qr-decode-image-camera.git", :tag => "#{s.version}" }
-  s.author      = "Igor"
-  s.platform    = :ios, "9.0"
-  s.source_files    = "ios/QrCode/", "ios/QrCode/*.{h,m}"
-  s.frameworks       = ["UIKit", "AVFoundation", "CoreImage"]
-  s.dependency 'React'
+  s.name         = "QrCode"
+  s.version      = package["version"]
+  s.summary      = "QR code scanner and image decoder for React Native"
+  s.description  = "Modern QR code scanner overlay and image decoder for React Native apps."
+  s.license      = { :type => "MIT", :file => "LICENSE" }
+  s.homepage     = package["homepage"]
+  s.source       = { :git => package["repository"]["url"], :tag => "#{s.version}" }
+  s.author       = package["author"]
+  s.platform     = :ios, "12.0"
+  s.source_files = "ios/QrCode/*.{h,m,mm}"
+  s.frameworks   = ["CoreImage"]
+  s.dependency "React-Core"
 end

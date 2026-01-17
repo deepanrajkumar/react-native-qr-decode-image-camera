@@ -1,379 +1,322 @@
-import React, {Component} from 'react';
-import {
-  ActivityIndicator,
-  StyleSheet,
-  View,
-  Animated,
-  Easing,
-  Text,
-  Image,
-  Vibration,
-  Platform,
-  PixelRatio,
-  StatusBar
-} from 'react-native';
-/**
- * Scanning Interface Mask
- * Write a separate class for easy copying
- */
-export default class QRScannerView extends Component {
-  static defaultProps = {
-    maskColor: '#0000004D',
-    cornerColor: '#22ff00',
-    borderColor: '#000000',
-    rectHeight: 200,
-    rectWidth: 200,
-    borderWidth: 0,
-    cornerBorderWidth: 4,
-    cornerBorderLength: 20,
-    cornerOffsetSize: 1,
-    isCornerOffset: true,
-    bottomHeight: 100,
-    scanBarAnimateTime: 2500,
-    scanBarColor: '#22ff00',
-    scanBarImage: null,
-    scanBarHeight: 1.5,
-    scanBarMargin: 6,
-    hintText: 'Put the QR code / bar code into the box and it will scan automatically',
-    hintTextStyle: {
-      color: '#fff',
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Easing, Image, StyleSheet, Text, View } from "react-native";
+
+export default function QRScannerView(props) {
+  const {
+    maskColor = "rgba(0,0,0,0.5)",
+    cornerColor = "#22ff00",
+    borderColor = "#000000",
+    rectHeight = 200,
+    rectWidth = 200,
+    borderWidth = 0,
+    cornerBorderWidth = 4,
+    cornerBorderLength = 20,
+    cornerOffsetSize = 1,
+    isCornerOffset = true,
+    bottomHeight = 100,
+    scanBarAnimateTime = 2500,
+    scanBarColor = "#22ff00",
+    scanBarImage = null,
+    scanBarHeight = 1.5,
+    scanBarMargin = 6,
+    hintText = "Put the QR code into the box to scan",
+    hintTextStyle = {
+      color: "#fff",
       fontSize: 14,
-      backgroundColor: 'transparent'
+      backgroundColor: "transparent"
     },
-    hintTextPosition: 130,
-    isShowScanBar: true
-  };
+    hintTextPosition = 130,
+    isShowScanBar = true,
+    finderX = 0,
+    finderY = 0,
+    returnSize,
+    style
+  } = props;
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      topWidth: 0,
-      topHeight: 0,
-      leftWidth: 0,
-      animatedValue: new Animated.Value(0)
+  const [layout, setLayout] = useState({ width: 0, height: 0 });
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isShowScanBar) {
+      return undefined;
     }
-    this.isClosed = false;
-  }
+    animatedValue.setValue(0);
+    const animation = Animated.loop(
+      Animated.timing(animatedValue, {
+        toValue: rectHeight,
+        duration: scanBarAnimateTime,
+        easing: Easing.linear,
+        useNativeDriver: true
+      })
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue, rectHeight, scanBarAnimateTime, isShowScanBar]);
 
-  //Get background color
-  getBackgroundColor = () => {
-    return ({backgroundColor: this.props.maskColor});
-  }
-
-  //Get scan box background size
-  getRectSize = () => {
-    return ({height: this.props.rectHeight, width: this.props.rectWidth});
-  }
-
-  //Get scan frame border size
-
-  getBorderSize = () => {
-    if (this.props.isCornerOffset) {
-      return ({
-        height: this.props.rectHeight - this.props.cornerOffsetSize * 2,
-        width: this.props.rectWidth - this.props.cornerOffsetSize * 2
-      });
-    } else {
-      return ({height: this.props.rectHeight, width: this.props.rectWidth});
-    }
-  }
-
-  //Get the color of the corner of the scan frame
-  getCornerColor = () => {
-    return ({borderColor: this.props.cornerColor});
-  }
-
-  //Get the size of the corner of the scan frame
-  getCornerSize = () => {
-    return ({height: this.props.cornerBorderLength, width: this.props.cornerBorderLength});
-  }
-
-  //Get scan frame size
-  getBorderWidth = () => {
-    return ({borderWidth: this.props.borderWidth});
-  }
-
-  //Get scan box color
-  getBorderColor = () => {
-    return ({borderColor: this.props.borderColor});
-  }
-
-  //Measure the size of the entire scanning component
-  measureTotalSize = (e) => {
-    let totalSize = e.layout;
-    this.setState({topWidth: totalSize.width})
-  }
-
-  //Measure the position of the scan frame
-  measureRectPosition = (e) => {
-    let rectSize = e.layout;
-    rectSize.x += this.props.finderX
-    rectSize.y += this.props.finderY
-    this.props.returnSize(rectSize)
-    this.setState({topHeight: rectSize.y, leftWidth: rectSize.x})
-  }
-
-  //Get top mask height
-  getTopMaskHeight = () => {
-    if (this.props.isCornerOffset) {
-      return this.state.topHeight + this.props.rectHeight - this.props.cornerOffsetSize;
-    } else {
-      return this.state.topHeight + this.props.rectHeight;
-    }
-  }
-
-  //Get bottom mask height
-  getBottomMaskHeight = () => {
-    if (this.props.isCornerOffset) {
-      return this.props.rectHeight + this.state.topHeight - this.props.cornerOffsetSize;
-    } else {
-      return this.state.topHeight + this.props.rectHeight;
-    }
-  }
-
-  //Get the left and right mask height
-  getSideMaskHeight = () => {
-    if (this.props.isCornerOffset) {
-      return this.props.rectHeight - this.props.cornerOffsetSize * 2;
-    } else {
-      return this.props.rectHeight;
-    }
-  }
-
-  //Get left and right mask width
-  getSideMaskWidth = () => {
-    if (this.props.isCornerOffset) {
-      return this.state.leftWidth + this.props.cornerOffsetSize;
-    } else {
-      return this.state.leftWidth;
-    }
-  }
-
-  getBottomHeight = () => {
-    return ({bottom: this.props.bottomHeight});
-  }
-
-  getScanBarMargin = () => {
-    return ({marginRight: this.props.scanBarMargin, marginLeft: this.props.scanBarMargin})
-  }
-
-  getScanImageWidth = () => {
-    return this.props.rectWidth - this.props.scanBarMargin * 2
-  }
-
-  //Draw scan lines
-  _renderScanBar = () => {
-    if (!this.props.isShowScanBar) 
-      return;
-    if (this.props.scanBarImage) {
-      return <Image
-        style={{
-        resizeMode: 'contain',
-        width: this.getScanImageWidth()
-      }}
-        source={this.props.scanBarImage}/>
-    } else {
-      return <View
-        style={[
-        this.getScanBarMargin(), {
-          backgroundColor: this.props.scanBarColor,
-          height: this.props.scanBarHeight
-        }
-      ]}/>
-    }
-  }
-
-  render() {
-    const animatedStyle = {
-      transform: [
-        {
-          translateY: this.state.animatedValue
-        }
-      ]
+  const rect = useMemo(() => {
+    const width = Math.max(0, rectWidth);
+    const height = Math.max(0, rectHeight);
+    const left =
+      layout.width > 0 ? (layout.width - width) / 2 + finderX : 0;
+    const top =
+      layout.height > 0 ? (layout.height - height) / 2 + finderY : 0;
+    const right = Math.max(0, layout.width - left - width);
+    return {
+      left,
+      top,
+      width,
+      height,
+      right
     };
+  }, [layout.width, layout.height, rectWidth, rectHeight, finderX, finderY]);
+
+  useEffect(() => {
+    if (!returnSize || layout.width === 0 || layout.height === 0) {
+      return;
+    }
+    returnSize({
+      x: rect.left,
+      y: rect.top,
+      width: rect.width,
+      height: rect.height
+    });
+  }, [layout.width, layout.height, rect, returnSize]);
+
+  const borderInset = isCornerOffset ? cornerOffsetSize : 0;
+  const borderHeight = rect.height - borderInset * 2;
+  const borderWidthValue = rect.width - borderInset * 2;
+
+  const overlayStyle = useMemo(
+    () => ({
+      ...StyleSheet.absoluteFillObject,
+      bottom: bottomHeight
+    }),
+    [bottomHeight]
+  );
+
+  const renderScanBar = () => {
+    if (!isShowScanBar) {
+      return null;
+    }
+    const scanWidth = rect.width - scanBarMargin * 2;
+    if (scanBarImage) {
+      return (
+        <Image
+          source={scanBarImage}
+          style={{ width: scanWidth, height: scanBarHeight }}
+          resizeMode="contain"
+        />
+      );
+    }
     return (
       <View
-        onLayout={({nativeEvent: e}) => this.measureTotalSize(e)}
-        style={[
-        styles.container, this.getBottomHeight()
-      ]}>
-        {/* <View style={{flex:1}}></View> */}
-        <View
-          style={[
-          styles.viewfinder, this.getRectSize(),{top:this.props.finderY,left:this.props.finderX}
-          ]}
-          onLayout={({nativeEvent: e}) => this.measureRectPosition(e)}>
-          <View
-            style={[
-            this.getBorderSize(),
-            this.getBorderColor(),
-            this.getBorderWidth()
-          ]}>
-
-            <Animated.View style={[animatedStyle]}>
-              {this._renderScanBar()}
-            </Animated.View>
-
-          </View>
-          <View
-            style={[
-            this.getCornerColor(),
-            this.getCornerSize(),
-            styles.topLeftCorner, {
-              borderLeftWidth: this.props.cornerBorderWidth,
-              borderTopWidth: this.props.cornerBorderWidth
-            }
-          ]}/>
-          <View
-            style={[
-            this.getCornerColor(),
-            this.getCornerSize(),
-            styles.topRightCorner, {
-              borderRightWidth: this.props.cornerBorderWidth,
-              borderTopWidth: this.props.cornerBorderWidth
-            }
-          ]}/>
-          <View
-            style={[
-            this.getCornerColor(),
-            this.getCornerSize(),
-            styles.bottomLeftCorner, {
-              borderLeftWidth: this.props.cornerBorderWidth,
-              borderBottomWidth: this.props.cornerBorderWidth
-            }
-          ]}/>
-          <View
-            style={[
-            this.getCornerColor(),
-            this.getCornerSize(),
-            styles.bottomRightCorner, {
-              borderRightWidth: this.props.cornerBorderWidth,
-              borderBottomWidth: this.props.cornerBorderWidth
-            }
-          ]}/>
-        </View>
-
-        <View
-          style={[
-          this.getBackgroundColor(),
-          styles.topMask, {
-            bottom: this.getTopMaskHeight() - this.props.finderY * 3,
-            top: 0,
-            width: this.state.topWidth
-          }
-        ]}/>
-
-        <View
-          style={[
-          this.getBackgroundColor(),
-          styles.leftMask, {
-            height: this.getSideMaskHeight(),
-            width: this.getSideMaskWidth() - this.props.finderX ,
-            bottom: this.getTopMaskHeight() - this.props.finderY * 3 - this.getSideMaskHeight()
-          }
-        ]}/>
-
-        <View
-          style={[
-          this.getBackgroundColor(),
-          styles.rightMask, {
-            height: this.getSideMaskHeight(),
-            width: this.getSideMaskWidth() - this.props.finderX * 3,
-            bottom: this.getTopMaskHeight() - this.props.finderY * 3 - this.getSideMaskHeight()
-          }
-        ]}/>
-
-        <View
-          style={[
-          this.getBackgroundColor(),
-          styles.bottomMask, {
-            top: this.getBottomMaskHeight() - this.props.finderY,
-            width: this.state.topWidth
-          }
-        ]}/>
-
-        <View
-          style={{
-          position: 'absolute',
-          bottom: this.props.hintTextPosition
-        }}>
-          <Text style={[this.props.hintTextStyle,{top:this.props.finderY,left:this.props.finderX}]}>{this.props.hintText}</Text>
-        </View>
-
-      </View>
+        style={{
+          width: scanWidth,
+          height: scanBarHeight,
+          backgroundColor: scanBarColor
+        }}
+      />
     );
-  }
+  };
 
-  componentDidMount() {
-    this.scannerLineMove();
-  }
+  return (
+    <View
+      style={[overlayStyle, style]}
+      pointerEvents="none"
+      onLayout={event => setLayout(event.nativeEvent.layout)}
+    >
+      <View
+        style={[
+          styles.viewfinder,
+          {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height
+          }
+        ]}
+      >
+        <View
+          style={[
+            styles.border,
+            {
+              width: borderWidthValue,
+              height: borderHeight,
+              borderColor,
+              borderWidth
+            }
+          ]}
+        >
+          <Animated.View
+            style={[
+              styles.scanBar,
+              {
+                marginHorizontal: scanBarMargin,
+                transform: [{ translateY: animatedValue }]
+              }
+            ]}
+          >
+            {renderScanBar()}
+          </Animated.View>
+        </View>
+        <View
+          style={[
+            styles.corner,
+            styles.topLeftCorner,
+            {
+              width: cornerBorderLength,
+              height: cornerBorderLength,
+              borderColor: cornerColor,
+              borderLeftWidth: cornerBorderWidth,
+              borderTopWidth: cornerBorderWidth
+            }
+          ]}
+        />
+        <View
+          style={[
+            styles.corner,
+            styles.topRightCorner,
+            {
+              width: cornerBorderLength,
+              height: cornerBorderLength,
+              borderColor: cornerColor,
+              borderRightWidth: cornerBorderWidth,
+              borderTopWidth: cornerBorderWidth
+            }
+          ]}
+        />
+        <View
+          style={[
+            styles.corner,
+            styles.bottomLeftCorner,
+            {
+              width: cornerBorderLength,
+              height: cornerBorderLength,
+              borderColor: cornerColor,
+              borderLeftWidth: cornerBorderWidth,
+              borderBottomWidth: cornerBorderWidth
+            }
+          ]}
+        />
+        <View
+          style={[
+            styles.corner,
+            styles.bottomRightCorner,
+            {
+              width: cornerBorderLength,
+              height: cornerBorderLength,
+              borderColor: cornerColor,
+              borderRightWidth: cornerBorderWidth,
+              borderBottomWidth: cornerBorderWidth
+            }
+          ]}
+        />
+      </View>
 
-  componentWillUnmount() {
-    this.isClosed = true;
-  }
+      <View
+        style={[
+          styles.mask,
+          {
+            backgroundColor: maskColor,
+            left: 0,
+            right: 0,
+            top: 0,
+            height: rect.top
+          }
+        ]}
+      />
+      <View
+        style={[
+          styles.mask,
+          {
+            backgroundColor: maskColor,
+            left: 0,
+            width: rect.left,
+            top: rect.top,
+            height: rect.height
+          }
+        ]}
+      />
+      <View
+        style={[
+          styles.mask,
+          {
+            backgroundColor: maskColor,
+            right: 0,
+            width: rect.right,
+            top: rect.top,
+            height: rect.height
+          }
+        ]}
+      />
+      <View
+        style={[
+          styles.mask,
+          {
+            backgroundColor: maskColor,
+            left: 0,
+            right: 0,
+            top: rect.top + rect.height,
+            bottom: 0
+          }
+        ]}
+      />
 
-  scannerLineMove() {
-    if (this.isClosed) {
-      return;
-    }
-    this.state.animatedValue.setValue(0); //重置Rotate动画值为0
-    Animated.timing(
-      this.state.animatedValue,
-      {toValue: this.props.rectHeight,
-      duration: this.props.scanBarAnimateTime,
-      easing: Easing.linear,
-      useNativeDriver: true
-    }).start(() => this.scannerLineMove());
-  }
+      <View
+        style={[
+          styles.hintContainer,
+          {
+            bottom: hintTextPosition
+          }
+        ]}
+      >
+        <Text style={hintTextStyle}>{hintText}</Text>
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    left: 0
-  },
   viewfinder: {
-    alignItems: 'center',
-    justifyContent: 'center'
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  border: {
+    alignItems: "center",
+    justifyContent: "flex-start"
+  },
+  scanBar: {
+    position: "absolute",
+    left: 0,
+    right: 0
+  },
+  corner: {
+    position: "absolute"
   },
   topLeftCorner: {
-    position: 'absolute',
     top: 0,
     left: 0
   },
   topRightCorner: {
-    position: 'absolute',
     top: 0,
     right: 0
   },
   bottomLeftCorner: {
-    position: 'absolute',
     bottom: 0,
     left: 0
   },
   bottomRightCorner: {
-    position: 'absolute',
     bottom: 0,
     right: 0
   },
-  topMask: {
-    position: 'absolute',
-    top: 0
+  mask: {
+    position: "absolute"
   },
-  leftMask: {
-    position: 'absolute',
-    left: 0
-  },
-  rightMask: {
-    position: 'absolute',
-    right: 0
-  },
-  bottomMask: {
-    position: 'absolute',
-    bottom: 0
+  hintContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center"
   }
 });
